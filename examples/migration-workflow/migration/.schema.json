@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "timestamp": "2025-11-17T02:19:07.952932+00:00",
+  "timestamp": "2025-11-17T02:31:21.052781+00:00",
   "tables": [
     {
       "name": "roles",
@@ -34,7 +34,7 @@
       "primary_key": []
     },
     {
-      "name": "userroles",
+      "name": "user_roles",
       "columns": [
         {
           "name": "id",
@@ -54,7 +54,7 @@
       ],
       "indices": [
         {
-          "name": "index_userroles_by_user_id",
+          "name": "index_user_roles_by_user_id",
           "columns": [
             "user_id"
           ],
@@ -62,7 +62,7 @@
           "primary_key": false
         },
         {
-          "name": "index_userroles_by_role_id",
+          "name": "index_user_roles_by_role_id",
           "columns": [
             "role_id"
           ],
@@ -143,42 +143,6 @@
       "indices": [
         {
           "name": "index_posts_by_user_id",
-          "columns": [
-            "user_id"
-          ],
-          "unique": false,
-          "primary_key": false
-        }
-      ],
-      "primary_key": []
-    },
-    {
-      "name": "dummys",
-      "columns": [
-        {
-          "name": "id",
-          "ty": "text",
-          "nullable": false
-        },
-        {
-          "name": "user_id",
-          "ty": "text",
-          "nullable": false
-        },
-        {
-          "name": "title",
-          "ty": "text",
-          "nullable": false
-        },
-        {
-          "name": "content",
-          "ty": "text",
-          "nullable": false
-        }
-      ],
-      "indices": [
-        {
-          "name": "index_dummys_by_user_id",
           "columns": [
             "user_id"
           ],

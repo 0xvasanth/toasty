@@ -2,6 +2,22 @@ use crate::snapshot::*;
 use anyhow::Result;
 use std::path::Path;
 
+/// Convert PascalCase to snake_case
+fn to_snake_case(s: &str) -> String {
+    let mut result = String::new();
+    for (i, ch) in s.chars().enumerate() {
+        if ch.is_uppercase() {
+            if i > 0 {
+                result.push('_');
+            }
+            result.push(ch.to_lowercase().next().unwrap());
+        } else {
+            result.push(ch);
+        }
+    }
+    result
+}
+
 /// Parse Rust entity files to extract schema
 pub struct EntityParser {
     entity_dir: std::path::PathBuf,
@@ -97,7 +113,9 @@ impl EntityParser {
         }
 
         let struct_name = parts[2].trim_end_matches(" {").to_string();
-        let table_name = struct_name.to_lowercase() + "s"; // Simple pluralization
+
+        // Convert to snake_case and pluralize
+        let table_name = to_snake_case(&struct_name) + "s";
 
         let mut columns = Vec::new();
         let mut indices = Vec::new();
