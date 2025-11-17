@@ -3,12 +3,14 @@ mod diff;
 mod generator;
 mod tracker;
 mod runner;
+mod loader;
 
 pub use snapshot::{SchemaSnapshot, save_snapshot, load_snapshot};
 pub use diff::{SchemaChange, SchemaDiff, detect_changes};
-pub use generator::{Migration, MigrationGenerator};
+pub use generator::{Migration, MigrationGenerator, MigrationFile};
 pub use tracker::MigrationTracker;
-pub use runner::MigrationRunner;
+pub use runner::{MigrationRunner, MigrationStatus};
+pub use loader::{MigrationLoader, MigrationFileInfo};
 
 use anyhow::Result;
 
