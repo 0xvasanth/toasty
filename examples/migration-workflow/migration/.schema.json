@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "timestamp": "2025-11-17T02:07:30.526473+00:00",
+  "timestamp": "2025-11-17T02:19:07.952932+00:00",
   "tables": [
     {
       "name": "roles",
@@ -143,6 +143,42 @@
       "indices": [
         {
           "name": "index_posts_by_user_id",
+          "columns": [
+            "user_id"
+          ],
+          "unique": false,
+          "primary_key": false
+        }
+      ],
+      "primary_key": []
+    },
+    {
+      "name": "dummys",
+      "columns": [
+        {
+          "name": "id",
+          "ty": "text",
+          "nullable": false
+        },
+        {
+          "name": "user_id",
+          "ty": "text",
+          "nullable": false
+        },
+        {
+          "name": "title",
+          "ty": "text",
+          "nullable": false
+        },
+        {
+          "name": "content",
+          "ty": "text",
+          "nullable": false
+        }
+      ],
+      "indices": [
+        {
+          "name": "index_dummys_by_user_id",
           "columns": [
             "user_id"
           ],

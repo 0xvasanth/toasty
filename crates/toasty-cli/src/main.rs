@@ -1,7 +1,7 @@
-use clap::{Parser, Subcommand};
 use anyhow::Result;
-use toasty_migrate::*;
+use clap::{Parser, Subcommand};
 use std::path::PathBuf;
+use toasty_migrate::*;
 
 #[derive(Parser)]
 #[command(name = "toasty")]
@@ -27,9 +27,9 @@ enum Commands {
         #[arg(short, long)]
         message: String,
 
-        /// Database connection URL (for introspection)
+        /// Database connection URL (required for introspection)
         #[arg(short, long)]
-        url: Option<String>,
+        url: String,
 
         /// Path to migrations directory
         #[arg(short, long, default_value = "migrations")]
@@ -86,21 +86,16 @@ async fn main() -> Result<()> {
     let cli = Cli::parse();
 
     match cli.command {
-        Commands::Init { dir } => {
-            cmd_init(dir).await
-        }
-        Commands::MigrateGenerate { message, url, dir, entity_dir } => {
-            cmd_generate(message, url, dir, entity_dir).await
-        }
-        Commands::MigrateUp { url, dir } => {
-            cmd_up(url, dir).await
-        }
-        Commands::MigrateDown { url, count, dir } => {
-            cmd_down(url, count, dir).await
-        }
-        Commands::MigrateStatus { url, dir } => {
-            cmd_status(url, dir).await
-        }
+        Commands::Init { dir } => cmd_init(dir).await,
+        Commands::MigrateGenerate {
+            message,
+            url,
+            dir,
+            entity_dir,
+        } => cmd_generate(message, url, dir, entity_dir).await,
+        Commands::MigrateUp { url, dir } => cmd_up(url, dir).await,
+        Commands::MigrateDown { url, count, dir } => cmd_down(url, count, dir).await,
+        Commands::MigrateStatus { url, dir } => cmd_status(url, dir).await,
     }
 }
 
@@ -213,18 +208,16 @@ pub struct User {
 
     println!();
     println!("🎉 Toasty project initialized!");
-    println!();
-    println!("📝 Next steps:");
-    println!("   1. Add entity/ to your workspace Cargo.toml");
-    println!("   2. Define your models in entity/src/lib.rs");
-    println!("   3. Generate migrations with: toasty migrate:generate");
-    println!();
-    println!("💡 See README.md for complete workflow");
 
     Ok(())
 }
 
-async fn cmd_generate(message: String, url: Option<String>, dir: String, entity_dir: Option<String>) -> Result<()> {
+async fn cmd_generate(
+    message: String,
+    url: String,
+    dir: String,
+    entity_dir: Option<String>,
+) -> Result<()> {
     println!("🔍 Generating migration: {}", message);
     println!("📁 Migration directory: {}", dir);
 
@@ -246,44 +239,52 @@ async fn cmd_generate(message: String, url: Option<String>, dir: String, entity_
     let loader = MigrationLoader::new(&migration_dir);
     let snapshot_path = loader.snapshot_path();
 
-    // Load old snapshot (or create empty if first migration)
-    let old_snapshot = if snapshot_path.exists() {
-        println!("📸 Loading existing schema snapshot...");
-        load_snapshot(&snapshot_path)?
-    } else {
-        println!("📸 No existing snapshot found, creating baseline migration...");
-        SchemaSnapshot {
-            version: "1.0".to_string(),
-            timestamp: chrono::Utc::now().to_rfc3339(),
-            tables: vec![],
-        }
-    };
-
-    // Get new snapshot from entity files (this is the new schema from developer's models)
-    println!("📖 Building schema from entity files...");
+    // Build desired schema from entity files (what developer wants)
+    println!("📖 Building desired schema from entity files...");
     let parser = EntityParser::new(&entity_path);
-    let new_snapshot = match parser.parse_entities() {
+    let desired_schema = match parser.parse_entities() {
         Ok(snapshot) => {
-            println!("✅ Parsed {} model(s)", snapshot.tables.len());
+            println!("✅ Parsed {} model(s) from entities", snapshot.tables.len());
             snapshot
         }
         Err(e) => {
             return Err(anyhow::anyhow!(
-                "Failed to parse entity files: {}\nEnsure entity/src/lib.rs contains valid Toasty models", e
+                "Failed to parse entity files: {}\nEnsure entity/src/ contains valid Toasty models", e
             ));
         }
     };
 
-    // Detect changes between old and new snapshots
-    let diff = detect_changes(&old_snapshot, &new_snapshot)?;
+    // Get current schema from database (what actually exists)
+    println!("🔍 Introspecting current database schema...");
+    let introspector = SqlIntrospector::new(url.clone());
+    let current_schema = match introspector.introspect_schema().await {
+        Ok(snapshot) => {
+            println!("✅ Found {} table(s) in database", snapshot.tables.len());
+            snapshot
+        }
+        Err(e) => {
+            println!("⚠️  Database introspection failed: {}", e);
+            println!("   Assuming empty database (will generate CREATE statements)");
+            SchemaSnapshot {
+                version: "1.0".to_string(),
+                timestamp: chrono::Utc::now().to_rfc3339(),
+                tables: vec![],
+            }
+        }
+    };
+
+    // Detect changes: current database state → desired entity state
+    println!();
+    println!("🔄 Comparing database vs entities...");
+    let diff = detect_changes(&current_schema, &desired_schema)?;
 
     if diff.changes.is_empty() {
-        println!();
-        println!("✅ No schema changes detected - everything is up to date!");
-        println!("   Your entities match the current schema snapshot.");
+        println!("✅ Database matches entities - no migration needed!");
+        println!("   Your database schema is already up to date.");
 
-        // Save snapshot anyway to update timestamp
-        save_snapshot(&new_snapshot, &snapshot_path)?;
+        // Save entity schema for documentation
+        save_snapshot(&desired_schema, &snapshot_path)?;
+        println!("📝 Updated .schema.json for reference");
 
         // Don't create empty migration file
         return Ok(());
@@ -293,7 +294,11 @@ async fn cmd_generate(message: String, url: Option<String>, dir: String, entity_
     println!();
     println!("✅ Detected {} schema change(s):", diff.changes.len());
     for change in &diff.changes {
-        let marker = if change.is_destructive() { "⚠️ " } else { "✅" };
+        let marker = if change.is_destructive() {
+            "⚠️ "
+        } else {
+            "✅"
+        };
         println!("   {} {:?}", marker, change);
     }
 
@@ -306,14 +311,16 @@ async fn cmd_generate(message: String, url: Option<String>, dir: String, entity_
     println!();
     println!("✅ Created migration file: {}/{}", dir, migration.filename);
 
-    // Save new snapshot
-    save_snapshot(&new_snapshot, &snapshot_path)?;
+    // Save entity schema (for documentation/reference)
+    save_snapshot(&desired_schema, &snapshot_path)?;
     println!("✅ Updated schema snapshot: {}/.schema.json", dir);
 
     println!();
-    println!("📝 Next steps:");
-    println!("   1. Review the generated migration: {}/{}", dir, migration.filename);
-    println!("   2. Apply with: toasty migrate:up --url <database-url>");
+    println!(
+        "   - Review the generated migration: {}/{}",
+        dir, migration.filename
+    );
+    println!("   - Apply with: toasty migrate:up --url <database-url>");
 
     Ok(())
 }
