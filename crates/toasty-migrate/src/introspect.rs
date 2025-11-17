@@ -3,9 +3,9 @@ use anyhow::Result;
 
 /// Introspect database schema to create a snapshot
 /// This allows generating migrations based on current database state
-pub trait SchemaIntrospector {
+pub trait SchemaIntrospector: Send + Sync {
     /// Connect to database and read current schema
-    async fn introspect(&self) -> Result<SchemaSnapshot>;
+    fn introspect(&self) -> impl std::future::Future<Output = Result<SchemaSnapshot>> + Send;
 }
 
 /// SQL database introspection (works for PostgreSQL, MySQL, SQLite)
@@ -175,11 +175,13 @@ impl SqlIntrospector {
     }
 
     #[cfg(not(feature = "sqlite"))]
+    #[allow(dead_code)]
     async fn introspect_sqlite(&self) -> Result<SchemaSnapshot> {
         Err(anyhow::anyhow!("SQLite introspection requires 'sqlite' feature"))
     }
 
     #[cfg(not(feature = "mysql"))]
+    #[allow(dead_code)]
     async fn introspect_mysql(&self) -> Result<SchemaSnapshot> {
         Err(anyhow::anyhow!("MySQL introspection requires 'mysql' feature"))
     }
