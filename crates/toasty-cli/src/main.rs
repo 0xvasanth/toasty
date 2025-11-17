@@ -13,6 +13,13 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Commands {
+    /// Initialize Toasty project structure with entity and migration crates
+    Init {
+        /// Project directory (defaults to current directory)
+        #[arg(short, long, default_value = ".")]
+        dir: String,
+    },
+
     /// Generate a new migration from schema changes
     #[command(name = "migrate:generate")]
     MigrateGenerate {
@@ -27,6 +34,10 @@ enum Commands {
         /// Path to migrations directory
         #[arg(short, long, default_value = "migrations")]
         dir: String,
+
+        /// Path to entity crate directory
+        #[arg(short, long, default_value = "entity")]
+        entity_dir: Option<String>,
     },
 
     /// Run pending migrations
@@ -75,8 +86,11 @@ async fn main() -> Result<()> {
     let cli = Cli::parse();
 
     match cli.command {
-        Commands::MigrateGenerate { message, url, dir } => {
-            cmd_generate(message, url, dir).await
+        Commands::Init { dir } => {
+            cmd_init(dir).await
+        }
+        Commands::MigrateGenerate { message, url, dir, entity_dir } => {
+            cmd_generate(message, url, dir, entity_dir).await
         }
         Commands::MigrateUp { url, dir } => {
             cmd_up(url, dir).await
@@ -90,9 +104,139 @@ async fn main() -> Result<()> {
     }
 }
 
-async fn cmd_generate(message: String, url: Option<String>, dir: String) -> Result<()> {
+async fn cmd_init(dir: String) -> Result<()> {
+    println!("🚀 Initializing Toasty project structure...");
+    println!("📁 Project directory: {}", dir);
+    println!();
+
+    let project_dir = PathBuf::from(&dir);
+
+    // Create entity crate
+    let entity_dir = project_dir.join("entity");
+    std::fs::create_dir_all(entity_dir.join("src"))?;
+
+    // Create entity Cargo.toml
+    let entity_cargo_toml = format!(
+        r#"[package]
+name = "entity"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+toasty = {{ workspace = true }}
+"#
+    );
+    std::fs::write(entity_dir.join("Cargo.toml"), entity_cargo_toml)?;
+
+    // Create entity lib.rs with example
+    let entity_lib_rs = r#"// Define your Toasty models here
+// Example:
+//
+// use toasty::stmt::Id;
+//
+// #[derive(Debug, toasty::Model)]
+// pub struct User {
+//     #[key]
+//     #[auto]
+//     pub id: Id<Self>,
+//     pub name: String,
+//     #[unique]
+//     pub email: String,
+// }
+
+pub use toasty;
+"#;
+    std::fs::write(entity_dir.join("src/lib.rs"), entity_lib_rs)?;
+    println!("✅ Created entity crate: entity/");
+
+    // Create migration directory
+    let migration_dir = project_dir.join("migration");
+    std::fs::create_dir_all(&migration_dir)?;
+
+    // Create empty .schema.json
+    let empty_snapshot = SchemaSnapshot {
+        version: "1.0".to_string(),
+        timestamp: chrono::Utc::now().to_rfc3339(),
+        tables: vec![],
+    };
+    save_snapshot(&empty_snapshot, migration_dir.join(".schema.json"))?;
+    println!("✅ Created migration directory: migration/");
+
+    // Create README
+    let readme = r#"# Toasty Project
+
+This project uses Toasty ORM for database management.
+
+## Structure
+
+- `entity/` - Your database models (entities)
+- `migration/` - Database migrations
+
+## Workflow
+
+1. **Define entities** in `entity/src/lib.rs`
+2. **Generate migrations** from schema changes:
+   ```bash
+   toasty migrate:generate --message "add user table" --url "postgresql://localhost/mydb"
+   ```
+3. **Apply migrations**:
+   ```bash
+   toasty migrate:up --url "postgresql://localhost/mydb"
+   ```
+
+## Example Entity
+
+```rust
+use toasty::stmt::Id;
+
+#[derive(Debug, toasty::Model)]
+pub struct User {
+    #[key]
+    #[auto]
+    pub id: Id<Self>,
+    pub name: String,
+    #[unique]
+    pub email: String,
+}
+```
+
+## Migration Commands
+
+- `toasty init` - Initialize project structure
+- `toasty migrate:generate` - Generate migration from changes
+- `toasty migrate:up` - Apply pending migrations
+- `toasty migrate:down` - Rollback migrations
+- `toasty migrate:status` - Show migration status
+"#;
+    std::fs::write(project_dir.join("README.md"), readme)?;
+    println!("✅ Created README.md");
+
+    println!();
+    println!("🎉 Toasty project initialized!");
+    println!();
+    println!("📝 Next steps:");
+    println!("   1. Add entity/ to your workspace Cargo.toml");
+    println!("   2. Define your models in entity/src/lib.rs");
+    println!("   3. Generate migrations with: toasty migrate:generate");
+    println!();
+    println!("💡 See README.md for complete workflow");
+
+    Ok(())
+}
+
+async fn cmd_generate(message: String, url: Option<String>, dir: String, entity_dir: Option<String>) -> Result<()> {
     println!("🔍 Generating migration: {}", message);
     println!("📁 Migration directory: {}", dir);
+
+    // Check if entity directory exists
+    let entity_path = PathBuf::from(entity_dir.as_deref().unwrap_or("entity"));
+    if entity_path.exists() {
+        println!("📦 Entity directory: {}", entity_path.display());
+    } else {
+        println!("⚠️  Entity directory not found: {}", entity_path.display());
+        println!("   Run 'toasty init' to create the project structure");
+        println!("   Or specify custom path with --entity-dir");
+    }
     println!();
 
     // Create migration directory if it doesn't exist
