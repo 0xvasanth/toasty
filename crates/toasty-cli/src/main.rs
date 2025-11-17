@@ -259,28 +259,67 @@ async fn cmd_generate(message: String, url: Option<String>, dir: String, entity_
         }
     };
 
-    // Create an empty migration file that users can edit
-    let generator = MigrationGenerator::new(&migration_dir);
+    // Get new snapshot - either from database introspection or use old
+    let has_url = url.is_some();
+    let new_snapshot = if let Some(db_url) = url {
+        println!("🔍 Introspecting database schema from: {}", db_url);
+        let introspector = SqlIntrospector::new(db_url);
+        match introspector.introspect_schema().await {
+            Ok(snapshot) => {
+                println!("✅ Introspection complete");
+                snapshot
+            }
+            Err(e) => {
+                println!("⚠️  Introspection failed: {}", e);
+                println!("   Falling back to empty migration template");
+                old_snapshot.clone()
+            }
+        }
+    } else {
+        println!("ℹ️  No --url provided, creating empty migration template");
+        println!("   Use --url to auto-detect schema changes from database");
+        old_snapshot.clone()
+    };
 
-    // For now, create empty migration template
-    let diff = SchemaDiff { changes: vec![] };
+    // Detect changes between old and new snapshots
+    let diff = detect_changes(&old_snapshot, &new_snapshot)?;
+
+    if diff.changes.is_empty() {
+        println!("ℹ️  No schema changes detected");
+        if !has_url {
+            println!("   Provide --url for database introspection or edit migration manually");
+        }
+    } else {
+        println!();
+        println!("✅ Detected {} schema change(s):", diff.changes.len());
+        for change in &diff.changes {
+            let marker = if change.is_destructive() { "⚠️ " } else { "✅" };
+            println!("   {} {:?}", marker, change);
+        }
+    }
+
+    // Generate migration
+    let generator = MigrationGenerator::new(&migration_dir);
     let migration = generator.generate(&diff, &message)?;
 
     // Write migration file
     generator.write_migration_file(&migration)?;
+    println!();
     println!("✅ Created migration file: {}/{}", dir, migration.filename);
 
-    // Save snapshot (keep existing for now)
-    save_snapshot(&old_snapshot, &snapshot_path)?;
+    // Save new snapshot
+    save_snapshot(&new_snapshot, &snapshot_path)?;
     println!("✅ Updated schema snapshot: {}/.schema.json", dir);
 
     println!();
     println!("📝 Next steps:");
-    println!("   1. Edit the migration file to add your changes");
-    println!("   2. Run 'toasty migrate:up' to apply the migration");
-    println!();
-    println!("💡 For automatic change detection, use the library API:");
-    println!("   See examples/generate_migration.rs for complete workflow");
+    if !diff.changes.is_empty() {
+        println!("   1. Review the generated migration file");
+        println!("   2. Run 'toasty migrate:up --url <url>' to apply");
+    } else {
+        println!("   1. Edit the migration file to add your changes");
+        println!("   2. Run 'toasty migrate:up --url <url>' to apply");
+    }
 
     Ok(())
 }
