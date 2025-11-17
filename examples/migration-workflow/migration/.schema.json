@@ -1,7 +1,77 @@
 {
   "version": "1.0",
-  "timestamp": "2025-11-17T01:58:49.913124+00:00",
+  "timestamp": "2025-11-17T02:07:30.526473+00:00",
   "tables": [
+    {
+      "name": "roles",
+      "columns": [
+        {
+          "name": "id",
+          "ty": "text",
+          "nullable": false
+        },
+        {
+          "name": "name",
+          "ty": "text",
+          "nullable": false
+        },
+        {
+          "name": "description",
+          "ty": "text",
+          "nullable": true
+        }
+      ],
+      "indices": [
+        {
+          "name": "index_roles_by_name",
+          "columns": [
+            "name"
+          ],
+          "unique": true,
+          "primary_key": false
+        }
+      ],
+      "primary_key": []
+    },
+    {
+      "name": "userroles",
+      "columns": [
+        {
+          "name": "id",
+          "ty": "text",
+          "nullable": false
+        },
+        {
+          "name": "user_id",
+          "ty": "text",
+          "nullable": false
+        },
+        {
+          "name": "role_id",
+          "ty": "text",
+          "nullable": false
+        }
+      ],
+      "indices": [
+        {
+          "name": "index_userroles_by_user_id",
+          "columns": [
+            "user_id"
+          ],
+          "unique": false,
+          "primary_key": false
+        },
+        {
+          "name": "index_userroles_by_role_id",
+          "columns": [
+            "role_id"
+          ],
+          "unique": false,
+          "primary_key": false
+        }
+      ],
+      "primary_key": []
+    },
     {
       "name": "users",
       "columns": [
@@ -75,76 +145,6 @@
           "name": "index_posts_by_user_id",
           "columns": [
             "user_id"
-          ],
-          "unique": false,
-          "primary_key": false
-        }
-      ],
-      "primary_key": []
-    },
-    {
-      "name": "roles",
-      "columns": [
-        {
-          "name": "id",
-          "ty": "text",
-          "nullable": false
-        },
-        {
-          "name": "name",
-          "ty": "text",
-          "nullable": false
-        },
-        {
-          "name": "description",
-          "ty": "text",
-          "nullable": true
-        }
-      ],
-      "indices": [
-        {
-          "name": "index_roles_by_name",
-          "columns": [
-            "name"
-          ],
-          "unique": true,
-          "primary_key": false
-        }
-      ],
-      "primary_key": []
-    },
-    {
-      "name": "userroles",
-      "columns": [
-        {
-          "name": "id",
-          "ty": "text",
-          "nullable": false
-        },
-        {
-          "name": "user_id",
-          "ty": "text",
-          "nullable": false
-        },
-        {
-          "name": "role_id",
-          "ty": "text",
-          "nullable": false
-        }
-      ],
-      "indices": [
-        {
-          "name": "index_userroles_by_user_id",
-          "columns": [
-            "user_id"
-          ],
-          "unique": false,
-          "primary_key": false
-        },
-        {
-          "name": "index_userroles_by_role_id",
-          "columns": [
-            "role_id"
           ],
           "unique": false,
           "primary_key": false

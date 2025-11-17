@@ -18,26 +18,43 @@ impl EntityParser {
     pub fn parse_entities(&self) -> Result<SchemaSnapshot> {
         println!("📖 Parsing entity files from: {}", self.entity_dir.display());
 
-        // Read all .rs files in the entity directory
-        let lib_path = self.entity_dir.join("src/lib.rs");
-
-        if !lib_path.exists() {
+        let src_dir = self.entity_dir.join("src");
+        if !src_dir.exists() {
             return Err(anyhow::anyhow!(
-                "Entity lib.rs not found at: {}. Run 'toasty init' first.",
-                lib_path.display()
+                "Entity src/ directory not found at: {}. Run 'toasty init' first.",
+                src_dir.display()
             ));
         }
 
-        let content = std::fs::read_to_string(&lib_path)?;
-        let tables = self.parse_models_from_content(&content)?;
+        // Find all .rs files recursively
+        let mut all_tables = Vec::new();
+        self.scan_directory(&src_dir, &mut all_tables)?;
 
-        println!("✅ Parsed {} model(s) from entity files", tables.len());
+        println!("✅ Parsed {} model(s) from entity files", all_tables.len());
 
         Ok(SchemaSnapshot {
             version: "1.0".to_string(),
             timestamp: chrono::Utc::now().to_rfc3339(),
-            tables,
+            tables: all_tables,
         })
+    }
+
+    fn scan_directory(&self, dir: &Path, tables: &mut Vec<TableSnapshot>) -> Result<()> {
+        for entry in std::fs::read_dir(dir)? {
+            let entry = entry?;
+            let path = entry.path();
+
+            if path.is_file() && path.extension().and_then(|s| s.to_str()) == Some("rs") {
+                // Parse this Rust file
+                let content = std::fs::read_to_string(&path)?;
+                let mut file_tables = self.parse_models_from_content(&content)?;
+                tables.append(&mut file_tables);
+            } else if path.is_dir() {
+                // Recursively scan subdirectories
+                self.scan_directory(&path, tables)?;
+            }
+        }
+        Ok(())
     }
 
     fn parse_models_from_content(&self, content: &str) -> Result<Vec<TableSnapshot>> {
