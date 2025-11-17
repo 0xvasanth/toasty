@@ -5,6 +5,7 @@ pub mod tracker;
 pub mod runner;
 pub mod loader;
 pub mod context;
+pub mod introspect;
 
 pub use snapshot::{SchemaSnapshot, save_snapshot, load_snapshot};
 pub use diff::{SchemaChange, SchemaDiff, detect_changes};
@@ -13,6 +14,7 @@ pub use tracker::MigrationTracker;
 pub use runner::{MigrationRunner, MigrationStatus};
 pub use loader::{MigrationLoader, MigrationFileInfo};
 pub use context::{SqlMigrationContext, NoSqlMigrationContext, SqlFlavor, NoSqlOperation};
+pub use introspect::{SchemaIntrospector, SqlIntrospector, MongoDbIntrospector};
 
 use anyhow::Result;
 

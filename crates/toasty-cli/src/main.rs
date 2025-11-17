@@ -100,7 +100,7 @@ async fn cmd_generate(message: String, dir: String) -> Result<()> {
         println!("📸 Loading existing schema snapshot...");
         load_snapshot(&snapshot_path)?
     } else {
-        println!("📸 No existing snapshot found, creating baseline...");
+        println!("📸 No existing snapshot found, creating baseline migration...");
         SchemaSnapshot {
             version: "1.0".to_string(),
             timestamp: chrono::Utc::now().to_rfc3339(),
@@ -108,26 +108,28 @@ async fn cmd_generate(message: String, dir: String) -> Result<()> {
         }
     };
 
-    // TODO: Build new snapshot from current models
-    // For now, this requires schema from the project's models
-    // In a real implementation, we'd need to either:
-    // 1. Load the schema from the compiled project
-    // 2. Parse model files directly
-    // 3. Require user to provide schema programmatically
+    // Create an empty migration file that users can edit
+    let generator = MigrationGenerator::new(&migration_dir);
 
-    println!("⚠️  Note: Schema building from models requires project integration");
-    println!("   For now, you can use the toasty_migrate library programmatically");
+    // For now, create empty migration template
+    let diff = SchemaDiff { changes: vec![] };
+    let migration = generator.generate(&diff, &message)?;
+
+    // Write migration file
+    generator.write_migration_file(&migration)?;
+    println!("✅ Created migration file: {}/{}", dir, migration.filename);
+
+    // Save snapshot (keep existing for now)
+    save_snapshot(&old_snapshot, &snapshot_path)?;
+    println!("✅ Updated schema snapshot: {}/.schema.json", dir);
+
     println!();
-    println!("Example usage in build.rs or custom tool:");
-    println!("```rust");
-    println!("let schema = build_schema_from_models(); // Your schema building code");
-    println!("let new_snapshot = SchemaSnapshot::from_schema(&schema);");
-    println!("let diff = detect_changes(&old_snapshot, &new_snapshot)?;");
-    println!("let generator = MigrationGenerator::new(\"{}\");", dir);
-    println!("let migration = generator.generate(&diff, \"{}\")?;", message);
-    println!("generator.write_migration_file(&migration)?;");
-    println!("save_snapshot(&new_snapshot, snapshot_path)?;");
-    println!("```");
+    println!("📝 Next steps:");
+    println!("   1. Edit the migration file to add your changes");
+    println!("   2. Run 'toasty migrate:up' to apply the migration");
+    println!();
+    println!("💡 For automatic change detection, use the library API:");
+    println!("   See examples/generate_migration.rs for complete workflow");
 
     Ok(())
 }
