@@ -11,6 +11,7 @@ members = [
 
     # Driver implementations
     "crates/toasty-driver-dynamodb",
+    "crates/toasty-driver-mongodb",
     "crates/toasty-driver-mysql",
     "crates/toasty-driver-postgresql",
     "crates/toasty-driver-sqlite",
@@ -21,6 +22,7 @@ members = [
     # Examples
     "examples/composite-key",
     "examples/hello-toasty",
+    "examples/mongodb-example",
     "examples/cratehub",
     "examples/user-has-one-profile",
 
@@ -43,6 +45,7 @@ std-util = { path = "crates/std-util" }
 
 # Driver implementations
 toasty-driver-dynamodb = { path = "crates/toasty-driver-dynamodb" }
+toasty-driver-mongodb = { path = "crates/toasty-driver-mongodb" }
 toasty-driver-mysql = { path = "crates/toasty-driver-mysql" }
 toasty-driver-postgresql = { path = "crates/toasty-driver-postgresql" }
 toasty-driver-sqlite = { path = "crates/toasty-driver-sqlite" }
