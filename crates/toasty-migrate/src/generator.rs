@@ -33,14 +33,42 @@ impl MigrationGenerator {
         for change in changes {
             match change {
                 SchemaChange::CreateTable(table) => {
+                    // Generate column definitions
+                    let mut column_defs = Vec::new();
+                    for col in &table.columns {
+                        let default_val = col.nullable.then(|| "None".to_string())
+                            .or(Some("Some(\"''\".into())".to_string()))
+                            .unwrap();
+                        column_defs.push(format!(
+                            "            ColumnDef {{ name: \"{}\".into(), ty: \"{}\".into(), nullable: {}, default: {} }}",
+                            col.name, col.ty, col.nullable, default_val
+                        ));
+                    }
+
+                    let columns_str = if column_defs.is_empty() {
+                        "vec![]".to_string()
+                    } else {
+                        format!("vec![\n{}\n        ]", column_defs.join(",\n"))
+                    };
+
                     statements.push(format!(
-                        "// Create table: {}",
-                        table.name
+                        "db.create_table(\"{}\", {})?;",
+                        table.name, columns_str
                     ));
-                    statements.push(format!(
-                        "db.create_table(\"{}\", vec![/* columns */])?;",
-                        table.name
-                    ));
+
+                    // Generate index definitions
+                    for index in &table.indices {
+                        if !index.primary_key && !index.columns.is_empty() {
+                            let columns_str = index.columns.iter()
+                                .map(|c| format!("\"{}\".into()", c))
+                                .collect::<Vec<_>>()
+                                .join(", ");
+                            statements.push(format!(
+                                "db.create_index(\"{}\", IndexDef {{ name: \"{}\".into(), columns: vec![{}], unique: {} }})?;",
+                                table.name, index.name, columns_str, index.unique
+                            ));
+                        }
+                    }
                 }
                 SchemaChange::DropTable(name) => {
                     statements.push(format!("db.drop_table(\"{}\")?;", name));
@@ -64,9 +92,13 @@ impl MigrationGenerator {
                     ));
                 }
                 SchemaChange::CreateIndex { table, index } => {
+                    let columns_str = index.columns.iter()
+                        .map(|c| format!("\"{}\".into()", c))
+                        .collect::<Vec<_>>()
+                        .join(", ");
                     statements.push(format!(
-                        "db.create_index(\"{}\", IndexDef {{ name: \"{}\".into(), columns: vec![/* ... */], unique: {} }})?;",
-                        table, index.name, index.unique
+                        "db.create_index(\"{}\", IndexDef {{ name: \"{}\".into(), columns: vec![{}], unique: {} }})?;",
+                        table, index.name, columns_str, index.unique
                     ));
                 }
                 SchemaChange::DropIndex { table, index_name } => {
