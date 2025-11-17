@@ -259,43 +259,42 @@ async fn cmd_generate(message: String, url: Option<String>, dir: String, entity_
         }
     };
 
-    // Get new snapshot - either from database introspection or use old
-    let has_url = url.is_some();
-    let new_snapshot = if let Some(db_url) = url {
-        println!("🔍 Introspecting database schema from: {}", db_url);
-        let introspector = SqlIntrospector::new(db_url);
-        match introspector.introspect_schema().await {
-            Ok(snapshot) => {
-                println!("✅ Introspection complete");
-                snapshot
-            }
-            Err(e) => {
-                println!("⚠️  Introspection failed: {}", e);
-                println!("   Falling back to empty migration template");
-                old_snapshot.clone()
-            }
+    // Get new snapshot from entity files (this is the new schema from developer's models)
+    println!("📖 Building schema from entity files...");
+    let parser = EntityParser::new(&entity_path);
+    let new_snapshot = match parser.parse_entities() {
+        Ok(snapshot) => {
+            println!("✅ Parsed {} model(s)", snapshot.tables.len());
+            snapshot
         }
-    } else {
-        println!("ℹ️  No --url provided, creating empty migration template");
-        println!("   Use --url to auto-detect schema changes from database");
-        old_snapshot.clone()
+        Err(e) => {
+            return Err(anyhow::anyhow!(
+                "Failed to parse entity files: {}\nEnsure entity/src/lib.rs contains valid Toasty models", e
+            ));
+        }
     };
 
     // Detect changes between old and new snapshots
     let diff = detect_changes(&old_snapshot, &new_snapshot)?;
 
     if diff.changes.is_empty() {
-        println!("ℹ️  No schema changes detected");
-        if !has_url {
-            println!("   Provide --url for database introspection or edit migration manually");
-        }
-    } else {
         println!();
-        println!("✅ Detected {} schema change(s):", diff.changes.len());
-        for change in &diff.changes {
-            let marker = if change.is_destructive() { "⚠️ " } else { "✅" };
-            println!("   {} {:?}", marker, change);
-        }
+        println!("✅ No schema changes detected - everything is up to date!");
+        println!("   Your entities match the current schema snapshot.");
+
+        // Save snapshot anyway to update timestamp
+        save_snapshot(&new_snapshot, &snapshot_path)?;
+
+        // Don't create empty migration file
+        return Ok(());
+    }
+
+    // Show detected changes
+    println!();
+    println!("✅ Detected {} schema change(s):", diff.changes.len());
+    for change in &diff.changes {
+        let marker = if change.is_destructive() { "⚠️ " } else { "✅" };
+        println!("   {} {:?}", marker, change);
     }
 
     // Generate migration
@@ -313,13 +312,8 @@ async fn cmd_generate(message: String, url: Option<String>, dir: String, entity_
 
     println!();
     println!("📝 Next steps:");
-    if !diff.changes.is_empty() {
-        println!("   1. Review the generated migration file");
-        println!("   2. Run 'toasty migrate:up --url <url>' to apply");
-    } else {
-        println!("   1. Edit the migration file to add your changes");
-        println!("   2. Run 'toasty migrate:up --url <url>' to apply");
-    }
+    println!("   1. Review the generated migration: {}/{}", dir, migration.filename);
+    println!("   2. Apply with: toasty migrate:up --url <database-url>");
 
     Ok(())
 }

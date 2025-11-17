@@ -25,10 +25,9 @@ pub struct User {
 
     #[has_many]
     pub user_roles: toasty::HasMany<UserRole>,
+    // pub password: String,
 
-    pub password: String,
-
-    pub dummy_field: String,
+    // pub dummy_field: String,
 }
 
 /// Blog post model

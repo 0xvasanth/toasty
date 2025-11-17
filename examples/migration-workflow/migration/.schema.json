@@ -1,7 +1,51 @@
 {
   "version": "1.0",
-  "timestamp": "2025-11-17T01:48:48.585099+00:00",
+  "timestamp": "2025-11-17T01:58:49.913124+00:00",
   "tables": [
+    {
+      "name": "users",
+      "columns": [
+        {
+          "name": "id",
+          "ty": "text",
+          "nullable": false
+        },
+        {
+          "name": "name",
+          "ty": "text",
+          "nullable": false
+        },
+        {
+          "name": "username",
+          "ty": "text",
+          "nullable": false
+        },
+        {
+          "name": "email",
+          "ty": "text",
+          "nullable": false
+        }
+      ],
+      "indices": [
+        {
+          "name": "index_users_by_username",
+          "columns": [
+            "username"
+          ],
+          "unique": true,
+          "primary_key": false
+        },
+        {
+          "name": "index_users_by_email",
+          "columns": [
+            "email"
+          ],
+          "unique": true,
+          "primary_key": false
+        }
+      ],
+      "primary_key": []
+    },
     {
       "name": "posts",
       "columns": [
@@ -13,17 +57,17 @@
         {
           "name": "user_id",
           "ty": "text",
-          "nullable": true
+          "nullable": false
         },
         {
           "name": "title",
           "ty": "text",
-          "nullable": true
+          "nullable": false
         },
         {
           "name": "content",
           "ty": "text",
-          "nullable": true
+          "nullable": false
         }
       ],
       "indices": [
@@ -34,19 +78,9 @@
           ],
           "unique": false,
           "primary_key": false
-        },
-        {
-          "name": "posts_pkey",
-          "columns": [
-            "id"
-          ],
-          "unique": true,
-          "primary_key": true
         }
       ],
-      "primary_key": [
-        "id"
-      ]
+      "primary_key": []
     },
     {
       "name": "roles",
@@ -59,7 +93,7 @@
         {
           "name": "name",
           "ty": "text",
-          "nullable": true
+          "nullable": false
         },
         {
           "name": "description",
@@ -75,22 +109,12 @@
           ],
           "unique": true,
           "primary_key": false
-        },
-        {
-          "name": "roles_pkey",
-          "columns": [
-            "id"
-          ],
-          "unique": true,
-          "primary_key": true
         }
       ],
-      "primary_key": [
-        "id"
-      ]
+      "primary_key": []
     },
     {
-      "name": "user_roles",
+      "name": "userroles",
       "columns": [
         {
           "name": "id",
@@ -100,25 +124,17 @@
         {
           "name": "user_id",
           "ty": "text",
-          "nullable": true
+          "nullable": false
         },
         {
           "name": "role_id",
           "ty": "text",
-          "nullable": true
+          "nullable": false
         }
       ],
       "indices": [
         {
-          "name": "index_user_roles_by_role_id",
-          "columns": [
-            "role_id"
-          ],
-          "unique": false,
-          "primary_key": false
-        },
-        {
-          "name": "index_user_roles_by_user_id",
+          "name": "index_userroles_by_user_id",
           "columns": [
             "user_id"
           ],
@@ -126,71 +142,15 @@
           "primary_key": false
         },
         {
-          "name": "user_roles_pkey",
+          "name": "index_userroles_by_role_id",
           "columns": [
-            "id"
+            "role_id"
           ],
-          "unique": true,
-          "primary_key": true
-        }
-      ],
-      "primary_key": [
-        "id"
-      ]
-    },
-    {
-      "name": "users",
-      "columns": [
-        {
-          "name": "id",
-          "ty": "text",
-          "nullable": false
-        },
-        {
-          "name": "name",
-          "ty": "text",
-          "nullable": true
-        },
-        {
-          "name": "username",
-          "ty": "text",
-          "nullable": true
-        },
-        {
-          "name": "email",
-          "ty": "text",
-          "nullable": true
-        }
-      ],
-      "indices": [
-        {
-          "name": "index_users_by_email",
-          "columns": [
-            "email"
-          ],
-          "unique": true,
+          "unique": false,
           "primary_key": false
-        },
-        {
-          "name": "index_users_by_username",
-          "columns": [
-            "username"
-          ],
-          "unique": true,
-          "primary_key": false
-        },
-        {
-          "name": "users_pkey",
-          "columns": [
-            "id"
-          ],
-          "unique": true,
-          "primary_key": true
         }
       ],
-      "primary_key": [
-        "id"
-      ]
+      "primary_key": []
     }
   ]
 }
