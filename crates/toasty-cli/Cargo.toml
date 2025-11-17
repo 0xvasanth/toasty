@@ -7,6 +7,12 @@ edition = "2021"
 name = "toasty"
 path = "src/main.rs"
 
+[features]
+default = ["postgresql"]
+postgresql = ["toasty-migrate/postgresql"]
+sqlite = ["toasty-migrate/sqlite"]
+mysql = ["toasty-migrate/mysql"]
+
 [dependencies]
 toasty-core = { workspace = true }
 toasty-migrate = { workspace = true }

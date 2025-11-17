@@ -18,21 +18,156 @@ impl SqlIntrospector {
         Self { connection_url }
     }
 
-    /// Introspect schema from database information_schema
+    /// Introspect schema from database
     pub async fn introspect_schema(&self) -> Result<SchemaSnapshot> {
-        // TODO: Implement actual database introspection
-        // For PostgreSQL: Query information_schema.tables, information_schema.columns, pg_indexes
-        // For MySQL: Query information_schema.tables, information_schema.columns
-        // For SQLite: Query sqlite_master, table_info
+        let url = url::Url::parse(&self.connection_url)?;
 
-        println!("🔍 Introspecting database schema from: {}", self.connection_url);
+        match url.scheme() {
+            #[cfg(feature = "postgresql")]
+            "postgresql" | "postgres" => self.introspect_postgresql().await,
+            #[cfg(feature = "sqlite")]
+            "sqlite" => self.introspect_sqlite().await,
+            #[cfg(feature = "mysql")]
+            "mysql" => self.introspect_mysql().await,
+            scheme => Err(anyhow::anyhow!(
+                "Unsupported database for introspection: {}. Enable feature flag.", scheme
+            )),
+        }
+    }
 
-        // Placeholder implementation
+    #[cfg(feature = "postgresql")]
+    async fn introspect_postgresql(&self) -> Result<SchemaSnapshot> {
+        use tokio_postgres::NoTls;
+
+        println!("🔍 Introspecting PostgreSQL schema...");
+
+        let (client, connection) = tokio_postgres::connect(&self.connection_url, NoTls).await?;
+
+        // Spawn connection
+        tokio::spawn(async move {
+            if let Err(e) = connection.await {
+                eprintln!("connection error: {}", e);
+            }
+        });
+
+        let mut tables = Vec::new();
+
+        // Query tables
+        let rows = client.query(
+            "SELECT table_name FROM information_schema.tables
+             WHERE table_schema = 'public' AND table_type = 'BASE TABLE'
+             ORDER BY table_name",
+            &[],
+        ).await?;
+
+        for row in rows {
+            let table_name: String = row.get(0);
+
+            // Skip migration tracking table
+            if table_name == "_toasty_migrations" {
+                continue;
+            }
+
+            let table = self.introspect_postgresql_table(&client, &table_name).await?;
+            tables.push(table);
+        }
+
+        println!("✅ Found {} table(s)", tables.len());
+
         Ok(SchemaSnapshot {
             version: "1.0".to_string(),
             timestamp: chrono::Utc::now().to_rfc3339(),
-            tables: vec![],
+            tables,
         })
+    }
+
+    #[cfg(feature = "postgresql")]
+    async fn introspect_postgresql_table(
+        &self,
+        client: &tokio_postgres::Client,
+        table_name: &str,
+    ) -> Result<TableSnapshot> {
+        let mut columns = Vec::new();
+        let mut primary_key_cols = Vec::new();
+
+        // Get columns
+        let rows = client.query(
+            "SELECT column_name, data_type, is_nullable
+             FROM information_schema.columns
+             WHERE table_name = $1 AND table_schema = 'public'
+             ORDER BY ordinal_position",
+            &[&table_name],
+        ).await?;
+
+        for row in rows {
+            let col_name: String = row.get(0);
+            let data_type: String = row.get(1);
+            let is_nullable: String = row.get(2);
+
+            columns.push(ColumnSnapshot {
+                name: col_name,
+                ty: data_type,
+                nullable: is_nullable == "YES",
+            });
+        }
+
+        // Get primary key
+        let pk_rows = client.query(
+            "SELECT a.attname
+             FROM pg_index i
+             JOIN pg_attribute a ON a.attrelid = i.indrelid AND a.attnum = ANY(i.indkey)
+             WHERE i.indrelid = $1::regclass AND i.indisprimary",
+            &[&table_name],
+        ).await?;
+
+        for row in pk_rows {
+            let col_name: String = row.get(0);
+            primary_key_cols.push(col_name);
+        }
+
+        // Get indexes
+        let mut indices = Vec::new();
+        let idx_rows = client.query(
+            "SELECT indexname, indexdef
+             FROM pg_indexes
+             WHERE tablename = $1 AND schemaname = 'public'",
+            &[&table_name],
+        ).await?;
+
+        for row in idx_rows {
+            let idx_name: String = row.get(0);
+            let _idx_def: String = row.get(1);
+
+            // Simplified: would need to parse indexdef for column names
+            indices.push(IndexSnapshot {
+                name: idx_name.clone(),
+                columns: vec![], // TODO: Parse from indexdef
+                unique: false,    // TODO: Detect from indexdef
+                primary_key: idx_name.contains("pkey"),
+            });
+        }
+
+        Ok(TableSnapshot {
+            name: table_name.to_string(),
+            columns,
+            indices,
+            primary_key: primary_key_cols,
+        })
+    }
+
+    #[cfg(not(feature = "postgresql"))]
+    async fn introspect_postgresql(&self) -> Result<SchemaSnapshot> {
+        Err(anyhow::anyhow!("PostgreSQL introspection requires 'postgresql' feature"))
+    }
+
+    #[cfg(not(feature = "sqlite"))]
+    async fn introspect_sqlite(&self) -> Result<SchemaSnapshot> {
+        Err(anyhow::anyhow!("SQLite introspection requires 'sqlite' feature"))
+    }
+
+    #[cfg(not(feature = "mysql"))]
+    async fn introspect_mysql(&self) -> Result<SchemaSnapshot> {
+        Err(anyhow::anyhow!("MySQL introspection requires 'mysql' feature"))
     }
 }
 

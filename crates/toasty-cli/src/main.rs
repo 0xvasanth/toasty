@@ -20,6 +20,10 @@ enum Commands {
         #[arg(short, long)]
         message: String,
 
+        /// Database connection URL (for introspection)
+        #[arg(short, long)]
+        url: Option<String>,
+
         /// Path to migrations directory
         #[arg(short, long, default_value = "migrations")]
         dir: String,
@@ -71,8 +75,8 @@ async fn main() -> Result<()> {
     let cli = Cli::parse();
 
     match cli.command {
-        Commands::MigrateGenerate { message, dir } => {
-            cmd_generate(message, dir).await
+        Commands::MigrateGenerate { message, url, dir } => {
+            cmd_generate(message, url, dir).await
         }
         Commands::MigrateUp { url, dir } => {
             cmd_up(url, dir).await
@@ -86,12 +90,15 @@ async fn main() -> Result<()> {
     }
 }
 
-async fn cmd_generate(message: String, dir: String) -> Result<()> {
+async fn cmd_generate(message: String, url: Option<String>, dir: String) -> Result<()> {
     println!("🔍 Generating migration: {}", message);
     println!("📁 Migration directory: {}", dir);
     println!();
 
+    // Create migration directory if it doesn't exist
     let migration_dir = PathBuf::from(&dir);
+    std::fs::create_dir_all(&migration_dir)?;
+
     let loader = MigrationLoader::new(&migration_dir);
     let snapshot_path = loader.snapshot_path();
 
