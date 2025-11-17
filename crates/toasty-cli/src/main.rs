@@ -1,7 +1,10 @@
+mod reset;
+
 use anyhow::Result;
 use clap::{Parser, Subcommand};
 use std::path::PathBuf;
 use toasty_migrate::*;
+use reset::cmd_reset;
 
 #[derive(Parser)]
 #[command(name = "toasty")]
@@ -79,6 +82,26 @@ enum Commands {
         #[arg(short, long, default_value = "migrations")]
         dir: String,
     },
+
+    /// Reset database: drop all tables and rerun all migrations
+    #[command(name = "migrate:reset")]
+    MigrateReset {
+        /// Database connection URL
+        #[arg(short, long)]
+        url: String,
+
+        /// Path to migrations directory
+        #[arg(short, long, default_value = "migrations")]
+        dir: String,
+
+        /// Path to entity crate directory
+        #[arg(short, long, default_value = "entity")]
+        entity_dir: Option<String>,
+
+        /// Skip confirmation prompt
+        #[arg(long)]
+        force: bool,
+    },
 }
 
 #[tokio::main]
@@ -96,6 +119,12 @@ async fn main() -> Result<()> {
         Commands::MigrateUp { url, dir } => cmd_up(url, dir).await,
         Commands::MigrateDown { url, count, dir } => cmd_down(url, count, dir).await,
         Commands::MigrateStatus { url, dir } => cmd_status(url, dir).await,
+        Commands::MigrateReset {
+            url,
+            dir,
+            entity_dir,
+            force,
+        } => cmd_reset(url, dir, entity_dir, force).await,
     }
 }
 
