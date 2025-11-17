@@ -96,7 +96,7 @@ impl SqlIntrospector {
              FROM information_schema.columns
              WHERE table_name = $1 AND table_schema = 'public'
              ORDER BY ordinal_position",
-            &[&table_name],
+            &[&table_name.to_string()],
         ).await?;
 
         for row in rows {
@@ -117,7 +117,7 @@ impl SqlIntrospector {
              FROM pg_index i
              JOIN pg_attribute a ON a.attrelid = i.indrelid AND a.attnum = ANY(i.indkey)
              WHERE i.indrelid = $1::regclass AND i.indisprimary",
-            &[&table_name],
+            &[&table_name.to_string()],
         ).await?;
 
         for row in pk_rows {
@@ -131,7 +131,7 @@ impl SqlIntrospector {
             "SELECT indexname, indexdef
              FROM pg_indexes
              WHERE tablename = $1 AND schemaname = 'public'",
-            &[&table_name],
+            &[&table_name.to_string()],
         ).await?;
 
         for row in idx_rows {
