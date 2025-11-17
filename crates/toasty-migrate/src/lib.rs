@@ -1,9 +1,10 @@
-mod snapshot;
-mod diff;
-mod generator;
-mod tracker;
-mod runner;
-mod loader;
+pub mod snapshot;
+pub mod diff;
+pub mod generator;
+pub mod tracker;
+pub mod runner;
+pub mod loader;
+pub mod context;
 
 pub use snapshot::{SchemaSnapshot, save_snapshot, load_snapshot};
 pub use diff::{SchemaChange, SchemaDiff, detect_changes};
@@ -11,6 +12,7 @@ pub use generator::{Migration, MigrationGenerator, MigrationFile};
 pub use tracker::MigrationTracker;
 pub use runner::{MigrationRunner, MigrationStatus};
 pub use loader::{MigrationLoader, MigrationFileInfo};
+pub use context::{SqlMigrationContext, NoSqlMigrationContext, SqlFlavor, NoSqlOperation};
 
 use anyhow::Result;
 

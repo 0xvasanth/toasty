@@ -2,7 +2,7 @@ use crate::diff::{SchemaChange, SchemaDiff};
 use anyhow::Result;
 
 pub struct MigrationGenerator {
-    migration_dir: std::path::PathBuf,
+    pub migration_dir: std::path::PathBuf,
 }
 
 impl MigrationGenerator {
