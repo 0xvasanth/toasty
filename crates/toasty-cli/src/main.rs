@@ -1,10 +1,12 @@
 mod reset;
+mod executor;
 
 use anyhow::Result;
 use clap::{Parser, Subcommand};
 use std::path::PathBuf;
 use toasty_migrate::*;
 use reset::cmd_reset;
+use executor::MigrationExecutor;
 
 #[derive(Parser)]
 #[command(name = "toasty")]
