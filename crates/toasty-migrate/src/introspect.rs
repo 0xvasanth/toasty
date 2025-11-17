@@ -127,12 +127,21 @@ impl SqlIntrospector {
             primary_key_cols.push(col_name);
         }
 
-        // Get indexes
+        // Get indexes with column information
         let mut indices = Vec::new();
         let idx_query = format!(
-            "SELECT indexname, indexdef
-             FROM pg_indexes
-             WHERE tablename = '{}' AND schemaname = 'public'",
+            "SELECT
+                i.indexname,
+                i.indexdef,
+                ix.indisunique,
+                ix.indisprimary,
+                ARRAY_AGG(a.attname ORDER BY array_position(ix.indkey, a.attnum)) as index_columns
+             FROM pg_indexes i
+             JOIN pg_class c ON c.relname = i.indexname
+             JOIN pg_index ix ON ix.indexrelid = c.oid
+             JOIN pg_attribute a ON a.attrelid = ix.indrelid AND a.attnum = ANY(ix.indkey)
+             WHERE i.tablename = '{}' AND i.schemaname = 'public'
+             GROUP BY i.indexname, i.indexdef, ix.indisunique, ix.indisprimary",
             table_name
         );
         let idx_rows = client.query(&idx_query, &[]).await?;
@@ -140,13 +149,15 @@ impl SqlIntrospector {
         for row in idx_rows {
             let idx_name: String = row.get(0);
             let _idx_def: String = row.get(1);
+            let is_unique: bool = row.get(2);
+            let is_primary: bool = row.get(3);
+            let columns: Vec<String> = row.get(4);
 
-            // Simplified: would need to parse indexdef for column names
             indices.push(IndexSnapshot {
-                name: idx_name.clone(),
-                columns: vec![], // TODO: Parse from indexdef
-                unique: false,    // TODO: Detect from indexdef
-                primary_key: idx_name.contains("pkey"),
+                name: idx_name,
+                columns,
+                unique: is_unique,
+                primary_key: is_primary,
             });
         }
 

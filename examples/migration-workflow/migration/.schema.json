@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "timestamp": "2025-11-17T01:30:29.950481+00:00",
+  "timestamp": "2025-11-17T01:42:21.833440+00:00",
   "tables": [
     {
       "name": "posts",
@@ -28,16 +28,20 @@
       ],
       "indices": [
         {
-          "name": "posts_pkey",
-          "columns": [],
-          "unique": false,
-          "primary_key": true
-        },
-        {
           "name": "index_posts_by_user_id",
-          "columns": [],
+          "columns": [
+            "user_id"
+          ],
           "unique": false,
           "primary_key": false
+        },
+        {
+          "name": "posts_pkey",
+          "columns": [
+            "id"
+          ],
+          "unique": true,
+          "primary_key": true
         }
       ],
       "primary_key": [
@@ -65,16 +69,20 @@
       ],
       "indices": [
         {
-          "name": "roles_pkey",
-          "columns": [],
-          "unique": false,
-          "primary_key": true
+          "name": "index_roles_by_name",
+          "columns": [
+            "name"
+          ],
+          "unique": true,
+          "primary_key": false
         },
         {
-          "name": "index_roles_by_name",
-          "columns": [],
-          "unique": false,
-          "primary_key": false
+          "name": "roles_pkey",
+          "columns": [
+            "id"
+          ],
+          "unique": true,
+          "primary_key": true
         }
       ],
       "primary_key": [
@@ -102,22 +110,28 @@
       ],
       "indices": [
         {
-          "name": "user_roles_pkey",
-          "columns": [],
+          "name": "index_user_roles_by_role_id",
+          "columns": [
+            "role_id"
+          ],
           "unique": false,
-          "primary_key": true
+          "primary_key": false
         },
         {
           "name": "index_user_roles_by_user_id",
-          "columns": [],
+          "columns": [
+            "user_id"
+          ],
           "unique": false,
           "primary_key": false
         },
         {
-          "name": "index_user_roles_by_role_id",
-          "columns": [],
-          "unique": false,
-          "primary_key": false
+          "name": "user_roles_pkey",
+          "columns": [
+            "id"
+          ],
+          "unique": true,
+          "primary_key": true
         }
       ],
       "primary_key": [
@@ -150,22 +164,28 @@
       ],
       "indices": [
         {
-          "name": "users_pkey",
-          "columns": [],
-          "unique": false,
-          "primary_key": true
+          "name": "index_users_by_email",
+          "columns": [
+            "email"
+          ],
+          "unique": true,
+          "primary_key": false
         },
         {
           "name": "index_users_by_username",
-          "columns": [],
-          "unique": false,
+          "columns": [
+            "username"
+          ],
+          "unique": true,
           "primary_key": false
         },
         {
-          "name": "index_users_by_email",
-          "columns": [],
-          "unique": false,
-          "primary_key": false
+          "name": "users_pkey",
+          "columns": [
+            "id"
+          ],
+          "unique": true,
+          "primary_key": true
         }
       ],
       "primary_key": [
