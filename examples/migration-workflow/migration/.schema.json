@@ -1,0 +1,176 @@
+{
+  "version": "1.0",
+  "timestamp": "2025-11-17T01:27:47.843036+00:00",
+  "tables": [
+    {
+      "name": "posts",
+      "columns": [
+        {
+          "name": "id",
+          "ty": "text",
+          "nullable": false
+        },
+        {
+          "name": "user_id",
+          "ty": "text",
+          "nullable": true
+        },
+        {
+          "name": "title",
+          "ty": "text",
+          "nullable": true
+        },
+        {
+          "name": "content",
+          "ty": "text",
+          "nullable": true
+        }
+      ],
+      "indices": [
+        {
+          "name": "posts_pkey",
+          "columns": [],
+          "unique": false,
+          "primary_key": true
+        },
+        {
+          "name": "index_posts_by_user_id",
+          "columns": [],
+          "unique": false,
+          "primary_key": false
+        }
+      ],
+      "primary_key": [
+        "id"
+      ]
+    },
+    {
+      "name": "roles",
+      "columns": [
+        {
+          "name": "id",
+          "ty": "text",
+          "nullable": false
+        },
+        {
+          "name": "name",
+          "ty": "text",
+          "nullable": true
+        },
+        {
+          "name": "description",
+          "ty": "text",
+          "nullable": true
+        }
+      ],
+      "indices": [
+        {
+          "name": "roles_pkey",
+          "columns": [],
+          "unique": false,
+          "primary_key": true
+        },
+        {
+          "name": "index_roles_by_name",
+          "columns": [],
+          "unique": false,
+          "primary_key": false
+        }
+      ],
+      "primary_key": [
+        "id"
+      ]
+    },
+    {
+      "name": "user_roles",
+      "columns": [
+        {
+          "name": "id",
+          "ty": "text",
+          "nullable": false
+        },
+        {
+          "name": "user_id",
+          "ty": "text",
+          "nullable": true
+        },
+        {
+          "name": "role_id",
+          "ty": "text",
+          "nullable": true
+        }
+      ],
+      "indices": [
+        {
+          "name": "user_roles_pkey",
+          "columns": [],
+          "unique": false,
+          "primary_key": true
+        },
+        {
+          "name": "index_user_roles_by_user_id",
+          "columns": [],
+          "unique": false,
+          "primary_key": false
+        },
+        {
+          "name": "index_user_roles_by_role_id",
+          "columns": [],
+          "unique": false,
+          "primary_key": false
+        }
+      ],
+      "primary_key": [
+        "id"
+      ]
+    },
+    {
+      "name": "users",
+      "columns": [
+        {
+          "name": "id",
+          "ty": "text",
+          "nullable": false
+        },
+        {
+          "name": "name",
+          "ty": "text",
+          "nullable": true
+        },
+        {
+          "name": "username",
+          "ty": "text",
+          "nullable": true
+        },
+        {
+          "name": "email",
+          "ty": "text",
+          "nullable": true
+        }
+      ],
+      "indices": [
+        {
+          "name": "users_pkey",
+          "columns": [],
+          "unique": false,
+          "primary_key": true
+        },
+        {
+          "name": "index_users_by_username",
+          "columns": [],
+          "unique": false,
+          "primary_key": false
+        },
+        {
+          "name": "index_users_by_email",
+          "columns": [],
+          "unique": false,
+          "primary_key": false
+        }
+      ],
+      "primary_key": [
+        "id"
+      ]
+    }
+  ]
+}

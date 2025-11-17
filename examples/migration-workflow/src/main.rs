@@ -1,4 +1,4 @@
-use entity::{User, Post, Role, UserRole};
+use entity::{Post, Role, User, UserRole};
 use toasty::Result;
 
 #[tokio::main]
@@ -6,7 +6,7 @@ async fn main() -> Result<()> {
     println!("=== Toasty Migration Workflow Example ===\n");
 
     let db_url = std::env::var("DATABASE_URL")
-        .unwrap_or_else(|_| "postgresql://localhost/toasty_migration_example".to_string());
+        .unwrap_or_else(|_| "postgresql://postgres:postgres@localhost:5433/postgres".to_string());
 
     println!("Connecting to: {}", db_url);
 
@@ -26,14 +26,16 @@ async fn main() -> Result<()> {
         .name("Alice")
         .username("alice")
         .email("alice@example.com")
-        .exec(&db).await?;
+        .exec(&db)
+        .await?;
 
-    let _post = alice.posts()
+    let _post = alice
+        .posts()
         .create()
         .title("Hello Toasty")
         .content("Migration example")
-        
-        .exec(&db).await?;
+        .exec(&db)
+        .await?;
 
     println!("Created: user={}, role={}", alice.name, admin.name);
     Ok(())

@@ -90,14 +90,15 @@ impl SqlIntrospector {
         let mut columns = Vec::new();
         let mut primary_key_cols = Vec::new();
 
-        // Get columns
-        let rows = client.query(
+        // Get columns - use simple_query to avoid parameter issues
+        let query = format!(
             "SELECT column_name, data_type, is_nullable
              FROM information_schema.columns
-             WHERE table_name = $1 AND table_schema = 'public'
+             WHERE table_name = '{}' AND table_schema = 'public'
              ORDER BY ordinal_position",
-            &[&table_name.to_string()],
-        ).await?;
+            table_name
+        );
+        let rows = client.query(&query, &[]).await?;
 
         for row in rows {
             let col_name: String = row.get(0);
@@ -112,13 +113,14 @@ impl SqlIntrospector {
         }
 
         // Get primary key
-        let pk_rows = client.query(
+        let pk_query = format!(
             "SELECT a.attname
              FROM pg_index i
              JOIN pg_attribute a ON a.attrelid = i.indrelid AND a.attnum = ANY(i.indkey)
-             WHERE i.indrelid = $1::regclass AND i.indisprimary",
-            &[&table_name.to_string()],
-        ).await?;
+             WHERE i.indrelid = '{}'::regclass AND i.indisprimary",
+            table_name
+        );
+        let pk_rows = client.query(&pk_query, &[]).await?;
 
         for row in pk_rows {
             let col_name: String = row.get(0);
@@ -127,12 +129,13 @@ impl SqlIntrospector {
 
         // Get indexes
         let mut indices = Vec::new();
-        let idx_rows = client.query(
+        let idx_query = format!(
             "SELECT indexname, indexdef
              FROM pg_indexes
-             WHERE tablename = $1 AND schemaname = 'public'",
-            &[&table_name.to_string()],
-        ).await?;
+             WHERE tablename = '{}' AND schemaname = 'public'",
+            table_name
+        );
+        let idx_rows = client.query(&idx_query, &[]).await?;
 
         for row in idx_rows {
             let idx_name: String = row.get(0);
