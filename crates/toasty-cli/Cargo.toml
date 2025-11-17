@@ -1,0 +1,28 @@
+[package]
+name = "toasty-cli"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "toasty"
+path = "src/main.rs"
+
+[dependencies]
+toasty-core = { workspace = true }
+toasty-migrate = { workspace = true }
+
+# CLI framework
+clap = { workspace = true }
+
+# Serialization
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+# Error handling
+anyhow = { workspace = true }
+
+# Async runtime
+tokio = { workspace = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }

@@ -2,9 +2,11 @@
 resolver = "2"
 members = [
     "crates/toasty",
+    "crates/toasty-cli",
     "crates/toasty-codegen",
     "crates/toasty-core",
     "crates/toasty-macros",
+    "crates/toasty-migrate",
     "crates/toasty-sql",
 
     # Driver implementations
@@ -35,6 +37,7 @@ toasty = { path = "crates/toasty" }
 toasty-codegen = { path = "crates/toasty-codegen" }
 toasty-core = { path = "crates/toasty-core" }
 toasty-macros = { path = "crates/toasty-macros" }
+toasty-migrate = { path = "crates/toasty-migrate" }
 toasty-sql = { path = "crates/toasty-sql" }
 std-util = { path = "crates/std-util" }
 
