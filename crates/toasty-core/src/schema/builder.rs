@@ -89,7 +89,7 @@ impl Builder {
                         })
                         .collect(),
                     model_to_table: stmt::ExprRecord::default(),
-                    model_pk_to_table: stmt::Expr::default(),
+                    model_pk_to_table: stmt::Expr::null(),
                     table_to_model: TableToModel::default(),
                 },
             );
@@ -124,7 +124,7 @@ impl BuildSchema<'_> {
             if let app::FieldTy::Primitive(primitive) = &mut field.ty {
                 let storage_ty = db::Type::from_app(
                     &primitive.ty,
-                    &primitive.storage_ty,
+                    primitive.storage_ty.as_ref(),
                     &self.db.storage_types,
                 )?;
 
