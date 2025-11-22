@@ -1,0 +1,47 @@
+{
+  "version": "1.0",
+  "timestamp": "2025-01-17T01:00:00Z",
+  "tables": [
+    {
+      "name": "users",
+      "columns": [
+        {
+          "name": "id",
+          "ty": "Id",
+          "nullable": false
+        },
+        {
+          "name": "name",
+          "ty": "String",
+          "nullable": false
+        },
+        {
+          "name": "email",
+          "ty": "String",
+          "nullable": false
+        }
+      ],
+      "indices": [
+        {
+          "name": "pk_users",
+          "columns": [
+            "id"
+          ],
+          "unique": true,
+          "primary_key": true
+        },
+        {
+          "name": "idx_users_email",
+          "columns": [
+            "email"
+          ],
+          "unique": true,
+          "primary_key": false
+        }
+      ],
+      "primary_key": [
+        "id"
+      ]
+    }
+  ]
+}

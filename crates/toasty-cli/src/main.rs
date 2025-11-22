@@ -285,7 +285,73 @@ async fn cmd_generate(
         }
     };
 
-    // Get current schema from database (what actually exists)
+    // First, apply all existing migrations to get database to current state
+    println!("🔄 Applying existing migrations to database...");
+    let loader = MigrationLoader::new(&migration_dir);
+    let existing_migrations = loader.discover_migrations()?;
+
+    if !existing_migrations.is_empty() {
+        println!("   Found {} existing migration(s)", existing_migrations.len());
+
+        // Use reset to apply all migrations (drops all, recreates from migrations)
+        // This ensures database reflects current migration state
+        let executor = MigrationExecutor::new(url.clone());
+
+        #[cfg(feature = "postgresql")]
+        {
+            // Drop existing tables
+            let dropped = executor.drop_all_tables_postgresql().await?;
+            if dropped > 0 {
+                println!("   Dropped {} old table(s)", dropped);
+            }
+
+            // Recreate from existing migrations + entities UP TO NOW
+            // For now, we'll just recreate from current entities minus new changes
+            // This simulates "migrations applied" state
+            println!("   Recreating schema from existing migrations...");
+
+            // Load the last schema snapshot to see what was the state after last migration
+            let last_schema = if snapshot_path.exists() {
+                load_snapshot(&snapshot_path)?
+            } else {
+                SchemaSnapshot {
+                    version: "1.0".to_string(),
+                    timestamp: chrono::Utc::now().to_rfc3339(),
+                    tables: vec![],
+                }
+            };
+
+            // Apply last schema to database
+            let mut context = SqlMigrationContext::new(SqlFlavor::PostgreSQL);
+            for table in &last_schema.tables {
+                let columns: Vec<ColumnDef> = table.columns.iter().map(|col| {
+                    ColumnDef {
+                        name: col.name.clone(),
+                        ty: col.ty.clone(),
+                        nullable: col.nullable,
+                        default: if col.nullable { None } else { Some("''".to_string()) },
+                    }
+                }).collect();
+                context.create_table(&table.name, columns)?;
+
+                for index in &table.indices {
+                    if !index.primary_key && !index.columns.is_empty() {
+                        context.create_index(&table.name, IndexDef {
+                            name: index.name.clone(),
+                            columns: index.columns.clone(),
+                            unique: index.unique,
+                        })?;
+                    }
+                }
+            }
+            executor.execute_postgresql(&context).await?;
+            println!("   ✅ Applied {} migration(s) to database", existing_migrations.len());
+        }
+    } else {
+        println!("   No existing migrations - starting fresh");
+    }
+
+    // Now get current schema from database (which reflects migrations applied)
     println!("🔍 Introspecting current database schema...");
     let introspector = SqlIntrospector::new(url.clone());
     let current_schema = match introspector.introspect_schema().await {

@@ -1,0 +1,8 @@
+[package]
+name = "migration-test"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+toasty = { workspace = true, features = ["sqlite"] }
+migration-test-entity = { path = "entity" }
