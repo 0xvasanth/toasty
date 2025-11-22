@@ -22,6 +22,7 @@ members = [
     # Examples
     "examples/composite-key",
     "examples/hello-toasty",
+    "examples/migration-test/entity",
     "examples/mongodb-example",
     "examples/transaction-demo",
     "examples/cratehub",
