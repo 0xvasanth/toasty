@@ -96,6 +96,36 @@ impl Db {
         cursor.next().await.unwrap()
     }
 
+    /// Start a transaction with explicit control
+    pub async fn begin(&self) -> Result<crate::Transaction> {
+        self.engine
+            .driver
+            .exec(&self.engine.schema.db, toasty_core::driver::operation::Transaction::Start.into())
+            .await?;
+
+        Ok(crate::Transaction::new(self))
+    }
+
+    /// Execute operations within a transaction (automatic commit/rollback)
+    pub async fn transaction<F, Fut, T>(&self, f: F) -> Result<T>
+    where
+        F: FnOnce(&crate::Transaction) -> Fut,
+        Fut: std::future::Future<Output = Result<T>>,
+    {
+        let tx = self.begin().await?;
+
+        match f(&tx).await {
+            Ok(result) => {
+                tx.commit().await?;
+                Ok(result)
+            }
+            Err(e) => {
+                let _ = tx.rollback().await;
+                Err(e)
+            }
+        }
+    }
+
     /// TODO: remove
     pub async fn reset_db(&self) -> Result<()> {
         self.engine.driver.reset_db(&self.engine.schema.db).await
