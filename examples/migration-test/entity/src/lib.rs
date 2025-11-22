@@ -8,5 +8,5 @@ pub struct User {
     pub name: String,
     #[unique]
     pub email: String,
-}
     pub bio: Option<String>,
+}
