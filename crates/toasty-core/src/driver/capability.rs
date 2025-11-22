@@ -178,6 +178,9 @@ impl StorageTypes {
         // strings of any length (up to BSON document size limit of 16MB)
         varchar: None,
 
+        // MongoDB stores UUIDs as strings
+        default_uuid_type: db::Type::Uuid,
+
         // MongoDB supports full u64 range via BSON Int64 and numeric strings
         max_unsigned_integer: None,
     };

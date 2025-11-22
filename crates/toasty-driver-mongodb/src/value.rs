@@ -50,6 +50,12 @@ pub fn to_bson(value: &stmt::Value) -> Bson {
         stmt::Value::List(_) => {
             todo!("List to BSON conversion")
         }
+        stmt::Value::Bytes(bytes) => {
+            Bson::Binary(bson::Binary {
+                subtype: bson::spec::BinarySubtype::Generic,
+                bytes: bytes.to_vec(),
+            })
+        }
     }
 }
 
