@@ -23,6 +23,9 @@ pub mod schema;
 pub mod stmt;
 pub use stmt::Statement;
 
+mod transaction;
+pub use transaction::Transaction;
+
 pub use toasty_macros::{create, query, Model};
 
 pub use anyhow::{Error, Result};
