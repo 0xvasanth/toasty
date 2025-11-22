@@ -40,13 +40,18 @@ pub async fn cmd_reset(
     // Use executor to actually drop tables
     let executor = MigrationExecutor::new(url.clone());
 
-    #[cfg(feature = "postgresql")]
-    let dropped = executor.drop_all_tables_postgresql().await?;
-
-    #[cfg(not(feature = "postgresql"))]
-    let dropped = {
-        println!("   Note: Only PostgreSQL is currently supported");
-        0
+    let dropped = if url.starts_with("postgresql") || url.starts_with("postgres") {
+        #[cfg(feature = "postgresql")]
+        { executor.drop_all_tables_postgresql().await? }
+        #[cfg(not(feature = "postgresql"))]
+        { return Err(anyhow::anyhow!("PostgreSQL feature not enabled")); }
+    } else if url.starts_with("sqlite") {
+        #[cfg(feature = "sqlite")]
+        { executor.drop_all_tables_sqlite()? }
+        #[cfg(not(feature = "sqlite"))]
+        { return Err(anyhow::anyhow!("SQLite feature not enabled")); }
+    } else {
+        return Err(anyhow::anyhow!("Unsupported database type"));
     };
 
     println!("✅ Dropped {} table(s)", dropped);
@@ -106,8 +111,17 @@ pub async fn cmd_reset(
     }
 
     // Execute the SQL statements
-    #[cfg(feature = "postgresql")]
-    executor.execute_postgresql(&context).await?;
+    if url.starts_with("postgresql") || url.starts_with("postgres") {
+        #[cfg(feature = "postgresql")]
+        { executor.execute_postgresql(&context).await?; }
+        #[cfg(not(feature = "postgresql"))]
+        { return Err(anyhow::anyhow!("PostgreSQL feature not enabled")); }
+    } else if url.starts_with("sqlite") {
+        #[cfg(feature = "sqlite")]
+        { executor.execute_sqlite(&context)?; }
+        #[cfg(not(feature = "sqlite"))]
+        { return Err(anyhow::anyhow!("SQLite feature not enabled")); }
+    }
 
     println!();
     println!("✅ Reset complete!");

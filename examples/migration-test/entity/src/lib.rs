@@ -5,9 +5,7 @@ pub struct User {
     #[key]
     #[auto]
     pub id: Id<Self>,
-
     pub name: String,
-
     #[unique]
     pub email: String,
 }

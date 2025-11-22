@@ -36,6 +36,7 @@ tokio = { workspace = true }
 
 # Utilities
 chrono = "0.4"
+tempfile = { workspace = true }
 
 [dev-dependencies]
 tempfile = { workspace = true }

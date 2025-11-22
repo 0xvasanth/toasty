@@ -1,5 +1,6 @@
 mod reset;
 mod executor;
+mod shadow;
 
 use anyhow::Result;
 use clap::{Parser, Subcommand};
@@ -7,6 +8,7 @@ use std::path::PathBuf;
 use toasty_migrate::*;
 use reset::cmd_reset;
 use executor::MigrationExecutor;
+use shadow::ShadowDatabase;
 
 #[derive(Parser)]
 #[command(name = "toasty")]

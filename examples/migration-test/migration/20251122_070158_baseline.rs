@@ -1,11 +1,11 @@
 use toasty_migrate::{Migration, MigrationContext, ColumnDef, IndexDef};
 use anyhow::Result;
 
-pub struct Migration_20251122_065018_baseline;
+pub struct Migration_20251122_070158_baseline;
 
-impl Migration for Migration_20251122_065018_baseline {
+impl Migration for Migration_20251122_070158_baseline {
     fn version(&self) -> &str {
-        "20251122_065018_baseline"
+        "20251122_070158_baseline"
     }
 
     fn up(&self, db: &mut dyn MigrationContext) -> Result<()> {
