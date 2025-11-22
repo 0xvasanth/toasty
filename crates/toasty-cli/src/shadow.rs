@@ -113,9 +113,8 @@ impl ShadowDatabase {
         let mut statements = Vec::new();
         let lines: Vec<&str> = content.lines().collect();
 
-        // Find the up() function
+        // Find the up() function - extract only from up(), not down()
         let mut in_up_function = false;
-        let mut brace_count = 0;
         let mut i = 0;
 
         while i < lines.len() {
@@ -128,20 +127,10 @@ impl ShadowDatabase {
                 continue;
             }
 
-            // Track braces to know when we exit up()
-            if in_up_function {
-                for ch in line.chars() {
-                    if ch == '{' {
-                        brace_count += 1;
-                    } else if ch == '}' {
-                        brace_count -= 1;
-                        if brace_count == 0 {
-                            // Exited up() function
-                            in_up_function = false;
-                            break;
-                        }
-                    }
-                }
+            // Detect start of down() function - stop parsing
+            if line.contains("fn down(&self") {
+                in_up_function = false;
+                break;
             }
 
             // Only parse lines inside up() function
@@ -262,15 +251,22 @@ impl ShadowDatabase {
             .ok_or_else(|| anyhow::anyhow!("Failed to parse index name"))?;
         let unique = line.contains("unique: true");
 
-        // Extract columns from vec!["col1", "col2"]
+        // Extract columns from vec!["col1".into(), "col2".into()]
         let columns = if let Some(start) = line.find("columns: vec![") {
             let remaining = &line[start + 14..];
             if let Some(end) = remaining.find("]") {
                 let cols_str = &remaining[..end];
-                cols_str.split(",")
-                    .filter_map(|s| extract_quoted_string(s, "\""))
-                    .collect::<Vec<_>>()
-                    .join(", ")
+                // Extract all quoted strings (handles "email".into() format)
+                let mut cols = Vec::new();
+                let mut search_str = cols_str;
+                while let Some(idx) = search_str.find('"') {
+                    search_str = &search_str[idx + 1..];
+                    if let Some(end_idx) = search_str.find('"') {
+                        cols.push(search_str[..end_idx].to_string());
+                        search_str = &search_str[end_idx + 1..];
+                    }
+                }
+                cols.join(", ")
             } else {
                 String::new()
             }

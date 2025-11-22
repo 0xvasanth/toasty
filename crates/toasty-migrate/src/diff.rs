@@ -110,7 +110,12 @@ fn detect_table_changes(
     // Detect modified columns
     for (col_name, new_col) in &new_columns {
         if let Some(old_col) = old_columns.get(col_name) {
-            if old_col.ty != new_col.ty || old_col.nullable != new_col.nullable {
+            // Normalize types for comparison (TEXT == text, INTEGER == integer, etc.)
+            let old_ty_normalized = old_col.ty.to_uppercase();
+            let new_ty_normalized = new_col.ty.to_uppercase();
+
+            // Only detect as modified if types are actually different or nullable changed
+            if old_ty_normalized != new_ty_normalized || old_col.nullable != new_col.nullable {
                 changes.push(SchemaChange::ModifyColumn {
                     table: table_name.to_string(),
                     old: (*old_col).clone(),
@@ -136,12 +141,22 @@ fn detect_table_changes(
         }
     }
 
-    // New indices
-    for (idx_name, idx) in &new_indices {
-        if !old_indices.contains_key(idx_name) {
+    // New indices - check both by name AND by columns to avoid duplicates
+    for (idx_name, new_idx) in &new_indices {
+        // Check if index already exists by name
+        if old_indices.contains_key(idx_name) {
+            continue;
+        }
+
+        // Also check if an index with same columns exists (different name)
+        let columns_match = old_indices.values().any(|old_idx| {
+            old_idx.columns == new_idx.columns && old_idx.unique == new_idx.unique
+        });
+
+        if !columns_match {
             changes.push(SchemaChange::CreateIndex {
                 table: table_name.to_string(),
-                index: (*idx).clone(),
+                index: (*new_idx).clone(),
             });
         }
     }
