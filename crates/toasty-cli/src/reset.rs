@@ -47,7 +47,7 @@ pub async fn cmd_reset(
         { return Err(anyhow::anyhow!("PostgreSQL feature not enabled")); }
     } else if url.starts_with("sqlite") {
         #[cfg(feature = "sqlite")]
-        { executor.drop_all_tables_sqlite()? }
+        { executor.drop_all_tables_sqlite().await? }
         #[cfg(not(feature = "sqlite"))]
         { return Err(anyhow::anyhow!("SQLite feature not enabled")); }
     } else {
@@ -118,7 +118,7 @@ pub async fn cmd_reset(
         { return Err(anyhow::anyhow!("PostgreSQL feature not enabled")); }
     } else if url.starts_with("sqlite") {
         #[cfg(feature = "sqlite")]
-        { executor.execute_sqlite(&context)?; }
+        { executor.execute_sqlite(&context).await?; }
         #[cfg(not(feature = "sqlite"))]
         { return Err(anyhow::anyhow!("SQLite feature not enabled")); }
     }

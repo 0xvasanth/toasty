@@ -174,6 +174,118 @@ impl SqlIntrospector {
         Err(anyhow::anyhow!("PostgreSQL introspection requires 'postgresql' feature"))
     }
 
+    #[cfg(feature = "sqlite")]
+    async fn introspect_sqlite(&self) -> Result<SchemaSnapshot> {
+        use rusqlite::Connection;
+
+        println!("🔍 Introspecting SQLite schema...");
+
+        // Parse SQLite URL (sqlite:path or sqlite::memory:)
+        let db_path = self.connection_url.trim_start_matches("sqlite:");
+
+        let conn = Connection::open(db_path)?;
+
+        let mut tables = Vec::new();
+
+        // Query tables
+        let mut stmt = conn.prepare(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name"
+        )?;
+
+        let table_names: Vec<String> = stmt
+            .query_map([], |row| row.get(0))?
+            .collect::<Result<Vec<_>, _>>()?;
+
+        for table_name in table_names {
+            // Skip migration tracking table
+            if table_name == "_toasty_migrations" {
+                continue;
+            }
+
+            let table = self.introspect_sqlite_table(&conn, &table_name)?;
+            tables.push(table);
+        }
+
+        println!("✅ Found {} table(s)", tables.len());
+
+        Ok(SchemaSnapshot {
+            version: "1.0".to_string(),
+            timestamp: chrono::Utc::now().to_rfc3339(),
+            tables,
+        })
+    }
+
+    #[cfg(feature = "sqlite")]
+    fn introspect_sqlite_table(
+        &self,
+        conn: &rusqlite::Connection,
+        table_name: &str,
+    ) -> Result<TableSnapshot> {
+        let mut columns = Vec::new();
+        let mut primary_key_cols = Vec::new();
+
+        // Get columns using PRAGMA table_info
+        let mut stmt = conn.prepare(&format!("PRAGMA table_info({})", table_name))?;
+        let rows = stmt.query_map([], |row| {
+            Ok((
+                row.get::<_, String>(1)?, // name
+                row.get::<_, String>(2)?, // type
+                row.get::<_, i32>(3)?,    // notnull
+                row.get::<_, i32>(5)?,    // pk
+            ))
+        })?;
+
+        for row in rows {
+            let (col_name, col_type, not_null, is_pk) = row?;
+
+            columns.push(ColumnSnapshot {
+                name: col_name.clone(),
+                ty: col_type,
+                nullable: not_null == 0,
+            });
+
+            if is_pk > 0 {
+                primary_key_cols.push(col_name);
+            }
+        }
+
+        // Get indexes
+        let mut indices = Vec::new();
+        let mut idx_stmt = conn.prepare(&format!("PRAGMA index_list({})", table_name))?;
+        let idx_rows = idx_stmt.query_map([], |row| {
+            Ok((
+                row.get::<_, String>(1)?, // name
+                row.get::<_, i32>(2)?,    // unique
+            ))
+        })?;
+
+        for idx_row in idx_rows {
+            let (idx_name, is_unique) = idx_row?;
+
+            // Get index columns
+            let mut col_stmt = conn.prepare(&format!("PRAGMA index_info({})", idx_name))?;
+            let col_rows = col_stmt.query_map([], |row| {
+                row.get::<_, String>(2) // name
+            })?;
+
+            let idx_columns: Vec<String> = col_rows.collect::<Result<Vec<_>, _>>()?;
+
+            indices.push(IndexSnapshot {
+                name: idx_name.clone(),
+                columns: idx_columns,
+                unique: is_unique == 1,
+                primary_key: idx_name.contains("pk") || idx_name.ends_with("_pkey"),
+            });
+        }
+
+        Ok(TableSnapshot {
+            name: table_name.to_string(),
+            columns,
+            indices,
+            primary_key: primary_key_cols,
+        })
+    }
+
     #[cfg(not(feature = "sqlite"))]
     #[allow(dead_code)]
     async fn introspect_sqlite(&self) -> Result<SchemaSnapshot> {

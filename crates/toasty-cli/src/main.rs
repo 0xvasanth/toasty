@@ -288,9 +288,9 @@ async fn cmd_generate(
     };
 
     // Use shadow database approach (Prisma-style)
-    // .schema.json = accumulated state after all migrations
+    // Execute actual migrations in temp DB to get real current state
     let shadow_db = ShadowDatabase::new()?;
-    let current_schema = shadow_db.apply_migrations(&migration_dir)?;
+    let current_schema = shadow_db.apply_migrations(&migration_dir).await?;
 
     // Detect changes: current database state → desired entity state
     println!();
