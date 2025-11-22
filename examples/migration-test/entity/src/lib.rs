@@ -9,4 +9,5 @@ pub struct User {
     #[unique]
     pub email: String,
     pub bio: Option<String>,
+    pub age: Option<u32>,
 }

@@ -8,7 +8,7 @@ name = "toasty"
 path = "src/main.rs"
 
 [features]
-default = ["postgresql"]
+default = ["sqlite"]
 postgresql = ["toasty-migrate/postgresql", "dep:tokio-postgres"]
 sqlite = ["toasty-migrate/sqlite", "dep:rusqlite"]
 mysql = ["toasty-migrate/mysql"]

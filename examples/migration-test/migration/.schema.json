@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "timestamp": "2025-11-22T07:45:05.396765+00:00",
+  "timestamp": "2025-11-22T07:48:16.635798+00:00",
   "tables": [
     {
       "name": "users",
@@ -22,6 +22,11 @@
         },
         {
           "name": "bio",
+          "ty": "text",
+          "nullable": true
+        },
+        {
+          "name": "age",
           "ty": "text",
           "nullable": true
         }
