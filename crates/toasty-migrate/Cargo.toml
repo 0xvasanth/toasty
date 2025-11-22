@@ -18,6 +18,20 @@ tokio = { workspace = true }
 
 # Utilities
 chrono = "0.4"
+url = { workspace = true }
+
+# Database drivers (optional for introspection)
+tokio-postgres = { workspace = true, optional = true }
+rusqlite = { workspace = true, optional = true }
+mysql_async = { workspace = true, optional = true }
+mongodb = { version = "3", optional = true }
+
+[features]
+default = []
+postgresql = ["dep:tokio-postgres"]
+sqlite = ["dep:rusqlite"]
+mysql = ["dep:mysql_async"]
+mongodb_introspect = ["dep:mongodb"]
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["full"] }

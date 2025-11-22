@@ -7,9 +7,19 @@ edition = "2021"
 name = "toasty"
 path = "src/main.rs"
 
+[features]
+default = ["postgresql"]
+postgresql = ["toasty-migrate/postgresql", "dep:tokio-postgres"]
+sqlite = ["toasty-migrate/sqlite", "dep:rusqlite"]
+mysql = ["toasty-migrate/mysql"]
+
 [dependencies]
 toasty-core = { workspace = true }
 toasty-migrate = { workspace = true }
+
+# Database drivers for execution
+tokio-postgres = { workspace = true, optional = true }
+rusqlite = { workspace = true, optional = true }
 
 # CLI framework
 clap = { workspace = true }
@@ -23,6 +33,9 @@ anyhow = { workspace = true }
 
 # Async runtime
 tokio = { workspace = true }
+
+# Utilities
+chrono = "0.4"
 
 [dev-dependencies]
 tempfile = { workspace = true }

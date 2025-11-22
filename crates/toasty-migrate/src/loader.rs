@@ -1,5 +1,4 @@
 use anyhow::Result;
-use std::path::Path;
 
 /// Loads migration files from a directory
 pub struct MigrationLoader {

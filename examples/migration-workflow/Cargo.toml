@@ -1,0 +1,16 @@
+[package]
+name = "example-migration-workflow"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[features]
+default = ["postgresql"]
+postgresql = ["toasty/postgresql"]
+sqlite = ["toasty/sqlite"]
+
+[dependencies]
+toasty = { workspace = true }
+entity = { path = "entity" }
+tokio = { workspace = true }
+anyhow = { workspace = true }
