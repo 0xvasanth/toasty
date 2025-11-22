@@ -1,0 +1,15 @@
+[package]
+name = "example-transaction-demo"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[features]
+default = ["sqlite"]
+sqlite = ["toasty/sqlite"]
+postgresql = ["toasty/postgresql"]
+
+[dependencies]
+toasty = { workspace = true }
+tokio = { workspace = true }
+anyhow = { workspace = true }

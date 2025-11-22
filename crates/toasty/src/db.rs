@@ -109,18 +109,18 @@ impl Db {
     /// Execute operations within a transaction (automatic commit/rollback)
     pub async fn transaction<F, Fut, T>(&self, f: F) -> Result<T>
     where
-        F: FnOnce(crate::Transaction) -> Fut,
+        F: FnOnce(&crate::Transaction) -> Fut,
         Fut: std::future::Future<Output = Result<T>>,
     {
         let tx = self.begin().await?;
 
-        match f(tx).await {
+        match f(&tx).await {
             Ok(result) => {
-                // Transaction will commit when dropped successfully
+                tx.commit().await?;
                 Ok(result)
             }
             Err(e) => {
-                // Transaction will rollback on error
+                let _ = tx.rollback().await;
                 Err(e)
             }
         }

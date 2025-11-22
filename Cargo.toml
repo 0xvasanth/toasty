@@ -23,6 +23,7 @@ members = [
     "examples/composite-key",
     "examples/hello-toasty",
     "examples/mongodb-example",
+    "examples/transaction-demo",
     "examples/cratehub",
     "examples/user-has-one-profile",
 

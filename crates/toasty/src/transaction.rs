@@ -61,6 +61,11 @@ impl<'a> Transaction<'a> {
     pub async fn all<M: Model>(&self, query: crate::stmt::Select<M>) -> Result<Cursor<M>> {
         self.db.all(query).await
     }
+
+    /// Get database reference (for passing to model methods)
+    pub fn db(&self) -> &Db {
+        self.db
+    }
 }
 
 impl<'a> Drop for Transaction<'a> {
