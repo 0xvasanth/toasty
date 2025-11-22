@@ -183,8 +183,5 @@ impl StorageTypes {
 
         // MongoDB supports full u64 range via BSON Int64 and numeric strings
         max_unsigned_integer: None,
-
-        // MongoDB stores UUIDs as strings
-        default_uuid_type: db::Type::Uuid,
     };
 }
